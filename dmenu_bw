@@ -1,12 +1,12 @@
 #!/bin/sh
 
-configHome="${XDG_CONFIG_HOME:-${HOME}/.config}/dmenu_bw" #^
+configHome="${XDG_CONFIG_HOME:-${HOME}/.config}/menu-bw" #^
 configFile="${configHome}/config.json"
 self=$(basename "${0##/*/}")
 
 if [ -e "$configFile" ]; then
     copyCmds=$(jq -r ".copyCmds" "$configFile")
-    dmenuOpts=$(jq -r ".dmenuOpts" "$configFile")
+    menuCmd=$(jq -r ".menuCmd" "$configFile")
     editCmd=$(jq -r ".editCmd" "$configFile")
     passwordGenCmd=$(jq -r ".passwordGenCmd" "$configFile")
     sessionKeyFile=$(jq -r ".sessionKeyFile" "$configFile"); fi
@@ -26,8 +26,8 @@ if [ -z "$copyCmds" ] || [ "$copyCmds" = "null" ]; then
         "card": {},
         "identity": {}
     }'; fi
-if [ -z "$dmenuOpts" ] || [ "$dmenuOpts" = "null" ]; then
-    dmenuOpts="-i -l 10"; fi
+if [ -z "$menuCmd" ] || [ "$menuCmd" = "null" ]; then
+    menuCmd="dmenu -i -l 10"; fi
 if [ -z "$editCmd" ] || [ "$editCmd" = "null" ]; then
     editCmd="xterm -e nano"; fi
 [ "$passwordGenCmd" = "null" ] &&
@@ -256,9 +256,9 @@ edit () { #^
     rm -rf "$tmpDir" 1>/dev/null 2>&1
 } #$
 
-chosen=$(main_list | dmenu ${dmenuOpts}); [ -n "$chosen" ] || exit 1
+chosen=$(main_list | ${menuCmd}); [ -n "$chosen" ] || exit 1
 case "$chosen" in
-    create)     chosen=$(create_list | dmenu ${dmenuOpts}); [ -n "$chosen" ] || exit 1
+    create)     chosen=$(create_list | ${menuCmd}); [ -n "$chosen" ] || exit 1
                 case "$chosen" in
                     login)          create login ;;
                     "secure note")  create secureNote ;;
@@ -283,7 +283,7 @@ case "$chosen" in
                     3) itemType=".card" ;;
                     4) itemType=".identity" ;;
                 esac
-                chosen=$(item_list | dmenu ${dmenuOpts}); [ -n "$chosen" ] || exit 1
+                chosen=$(item_list | ${menuCmd}); [ -n "$chosen" ] || exit 1
                 case "$chosen" in
                     copy)   keys=$(echo "$copyCmds" | jq -r "${itemType} | keys[]")
                             unset fail

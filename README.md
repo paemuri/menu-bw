@@ -1,4 +1,16 @@
-# dmenu\_bw
+# menu-bw
+
+This is a fork of [Sife-ops/dmenu_bw](https://github.com/Sife-ops/dmenu_bw) to
+include the following features:
+
+- [x] Allow it to use other menu software in place of dmenu
+- [ ] Eval values from config, enabling it to use envs
+- [ ] Allow authenticating from menu instead of yad
+
+For now, the only API difference this have from the original code is that
+`dmenuOpts` became `menuCmd`, and the default value is now `dmenu -i -l 10`.
+
+# Original README
 
 ![giphy](https://media.giphy.com/media/iEJ7HRPdOpWUrNy3Ue/giphy.gif)
 
