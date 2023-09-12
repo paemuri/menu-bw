@@ -8,8 +8,8 @@ include the following features:
 - [ ] Allow authenticating from menu instead of yad
 - [ ] Choose what to copy in the menu
 
-For now, the only API difference this have from the original code is that
-`dmenuOpts` became `menuCmd`, and the default value is now `dmenu -i -l 10`.
+For now, the only API difference is that `dmenuOpts` became `menuCmd`, and its
+default value is now `dmenu -i -l 10`.
 
 # Original README
 
