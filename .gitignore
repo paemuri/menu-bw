@@ -1,6 +1,6 @@
 .SRCINFO
 github/
 PKGBUILD
-dmenu_bw.1
+menu-bw.1
 test/
 todo.md

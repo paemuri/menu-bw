@@ -230,9 +230,9 @@ edit () { #^
     # $2: item id
 
     # create secure temporary files for editing vault items
-    tmpDir=$(mktemp -d /tmp/dmenu_bw.XXXXXX)
+    tmpDir=$(mktemp -d /tmp/menu-bw.XXXXXX)
     chmod 700 "$tmpDir"
-    newItem=$(mktemp "${tmpDir}/dmenu_bw.json.XXXXXX")
+    newItem=$(mktemp "${tmpDir}/menu-bw.json.XXXXXX")
     chmod 600 "$newItem"
     echo "$1" | jq > "$newItem"
 
