@@ -5,11 +5,11 @@ configFile="${configHome}/config.json"
 self=$(basename "${0##/*/}")
 
 if [ -e "$configFile" ]; then
-    copyCmds=$(jq -r ".copyCmds" "$configFile")
-    menuCmd=$(jq -r ".menuCmd" "$configFile")
-    editCmd=$(jq -r ".editCmd" "$configFile")
-    passwordGenCmd=$(jq -r ".passwordGenCmd" "$configFile")
-    sessionKeyFile=$(jq -r ".sessionKeyFile" "$configFile"); fi
+    copyCmds="$(jq -r ".copyCmds" "$configFile")"
+    menuCmd="$(eval echo "$(jq -r ".menuCmd" "$configFile")")"
+    editCmd="$(eval echo "$(jq -r ".editCmd" "$configFile")")"
+    passwordGenCmd="$(eval echo "$(jq -r ".passwordGenCmd" "$configFile")")"
+    sessionKeyFile="$(eval echo "$(jq -r ".sessionKeyFile" "$configFile")")"; fi
 
 if [ -z "$copyCmds" ] || [ "$copyCmds" = "null" ]; then
     copyCmds='
@@ -26,13 +26,13 @@ if [ -z "$copyCmds" ] || [ "$copyCmds" = "null" ]; then
         "card": {},
         "identity": {}
     }'; fi
-if [ -z "$menuCmd" ] || [ "$menuCmd" = "null" ]; then
-    menuCmd="dmenu -i -l 10"; fi
-if [ -z "$editCmd" ] || [ "$editCmd" = "null" ]; then
-    editCmd="xterm -e nano"; fi
-[ "$passwordGenCmd" = "null" ] &&
+[ -z "$menuCmd" ] &&
+    menuCmd="dmenu -i -l 10"
+[ -z "$editCmd" ] &&
+    editCmd="xterm -e nano"
+[ -z "$passwordGenCmd" ] &&
     unset passwordGenCmd
-[ "$sessionKeyFile" = "null" ] &&
+[ -z "$sessionKeyFile" ] &&
     unset sessionKeyFile #$
 
 bwStatus=$(bw status | jq -r '.status') #^
