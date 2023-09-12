@@ -7,6 +7,7 @@ include the following features:
 - [x] Eval values from config, enabling it to use envs
 - [ ] Allow authenticating from menu instead of yad
 - [ ] Choose what to copy in the menu
+- [ ] Save only value, not script, in session file
 
 For now, the only API differences are:
 
