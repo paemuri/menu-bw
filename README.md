@@ -3,9 +3,11 @@
 This is a fork of [Sife-ops/dmenu_bw](https://github.com/Sife-ops/dmenu_bw) to
 include the following patches:
 
-- Menu-agnostic (not tied to dmenu)
+- Menu-agnostic: not tied to dmenu
 - Env vars in config
 - Menu for auth instead of yad
+- Bitwarden session refactor: no need to _source_ it in your dotfiles, just
+choose a file while the script does the rest
 
 ## Configuration
 
