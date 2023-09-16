@@ -1,70 +1,58 @@
 #!/bin/sh
 
-configHome="${XDG_CONFIG_HOME:-${HOME}/.config}/menu-bw" #^
-configFile="${configHome}/config.json"
+configFile="${XDG_CONFIG_HOME:-$HOME/.config}/menu-bw/config.json" #^
 self=$(basename "${0##/*/}")
 
 if [ -e "$configFile" ]; then
-    copyCmds="$(jq -r ".copyCmds" "$configFile")"
-    menuCmd="$(eval echo "$(jq -r ".menuCmd" "$configFile")")"
+    menuCmd="$(eval echo "$(jq -r ".menu.cmd" "$configFile")")"
+    menuListArgs="$(eval echo "$(jq -r ".menu.args.list" "$configFile")")"
+    menuEmailArgs="$(eval echo "$(jq -r ".menu.args.email" "$configFile")")"
+    menuPassArgs="$(eval echo "$(jq -r ".menu.args.pass" "$configFile")")"
+    copyCmd="$(eval echo "$(jq -r ".copyCmd" "$configFile")")"
     editCmd="$(eval echo "$(jq -r ".editCmd" "$configFile")")"
     passwordGenCmd="$(eval echo "$(jq -r ".passwordGenCmd" "$configFile")")"
     sessionKeyFile="$(eval echo "$(jq -r ".sessionKeyFile" "$configFile")")"; fi
 
-if [ -z "$copyCmds" ] || [ "$copyCmds" = "null" ]; then
-    copyCmds='
-    {
-        "login": {
-            ".login.username": [
-                "echo \"$value\" | xclip -i -selection clipboard"
-            ],
-            ".login.password": [
-                "echo \"$value\" | xclip -i -selection primary"
-            ]
-        },
-        "secureNote": {},
-        "card": {},
-        "identity": {}
-    }'; fi
-[ -z "$menuCmd" ] &&
-    menuCmd="dmenu -i -l 10"
-[ -z "$editCmd" ] &&
-    editCmd="xterm -e nano"
-[ -z "$passwordGenCmd" ] &&
-    unset passwordGenCmd
-[ -z "$sessionKeyFile" ] &&
-    unset sessionKeyFile #$
+if [ -z "$menuCmd" ] || [ "$menuCmd" = "null" ]; then
+    menuCmd="dmenu"; fi
+if [ -z "$menuListArgs" ] || [ "$menuListArgs" = "null" ]; then
+    menuListArgs="-i -l 10"; fi
+if [ -z "$menuEmailArgs" ] || [ "$menuEmailArgs" = "null" ]; then
+    menuEmailArgs="-i"; fi
+if [ -z "$menuPassArgs" ] || [ "$menuPassArgs" = "null" ]; then
+    menuPassArgs="-i"; fi
+if [ -z "$copyCmd" ] || [ "$copyCmd" = "null" ]; then
+    copyCmd="xclip -i -selection clipboard"; fi
+if [ -z "$editCmd" ] || [ "$editCmd" = "null" ]; then
+    editCmd="xterm -e nano"; fi
+if [ -z "$passwordGenCmd" ] || [ "$passwordGenCmd" = "null" ]; then
+    unset passwordGenCmd; fi
+if [ -z "$sessionKeyFile" ] || [ "$sessionKeyFile" = "null" ]; then
+    unset sessionKeyFile; fi #$
 
-bwStatus=$(bw status | jq -r '.status') #^
+[ -f "$sessionKeyFile" ] && #^
+    export BW_SESSION="$(cat $sessionKeyFile)"
+
+bwStatus=$(bw status | jq -r '.status')
 case "$bwStatus" in
     unlocked)   : ;;
     *)  case "$bwStatus" in
             unauthenticated)
                 notify-send "$self" "Unauthenticated session. Acquiring new session key." &
-                login=$(yad --form \
-                    --field="Email" "" \
-                    --field="Password":H "" \
-                    --separator="\n" |
-                        grep -v "^$")
-                sessionKey=$(bw login \
-                    $(echo "$login" | sed -n "1p") \
-                    $(echo "$login" | sed -n "2p") \
-                    --raw) ;;
+                email=$(echo -n | $menuCmd $menuEmailArgs)
+                pass=$(echo -n | $menuCmd $menuPassArgs)
+                sessionKey=$(bw login "$email" "$pass" --raw) ;;
             locked)
                 notify-send "$self" "Session locked. Acquiring new session key." &
-                password=$(yad \
-                    --title "Password" \
-                    --entry \
-                    --hide-text)
-                sessionKey=$(bw unlock "$password" --raw) ;;
+                pass=$(echo -n | $menuCmd $menuPassArgs)
+                sessionKey=$(bw unlock "$pass" --raw) ;;
             *)  notify-send "$self" "Failed to unlock session." &
                 exit 1 ;;
         esac
 
         # output session key to file
         if [ -n "$sessionKeyFile" ]; then
-            printf 'export BW_SESSION="%s"' \
-                "$sessionKey" > "$sessionKeyFile"
+            echo "$sessionKey" > "$sessionKeyFile"
         fi
 
         # confirm login
@@ -107,6 +95,11 @@ create_list () {
     echo "secure note"
     echo "card"
     echo "identity"
+}
+
+login_copy_list () {
+    echo "password"
+    echo "username"
 } #$
 
 createHelper () { #^
@@ -256,9 +249,9 @@ edit () { #^
     rm -rf "$tmpDir" 1>/dev/null 2>&1
 } #$
 
-chosen=$(main_list | ${menuCmd}); [ -n "$chosen" ] || exit 1
+chosen=$(main_list | $menuCmd $menuListArgs); [ -n "$chosen" ] || exit 1
 case "$chosen" in
-    create)     chosen=$(create_list | ${menuCmd}); [ -n "$chosen" ] || exit 1
+    create)     chosen=$(create_list | $menuCmd $menuListArgs); [ -n "$chosen" ] || exit 1
                 case "$chosen" in
                     login)          create login ;;
                     "secure note")  create secureNote ;;
@@ -273,7 +266,7 @@ case "$chosen" in
                     notify-send "$self" "Sync failed." & ;;
     "run Bitwarden Electron") bitwarden ;;
     ${sepStr}*) exit 1 ;;
-    *)          name=$(echo "$chosen" | cut -d '|' -f 1 | tr -d '[:space:]') # use awk
+    *)          name=$(echo "$chosen" | cut -d '|' -f 1)
                 id=$(echo "$chosen" | cut -d '|' -f 2 | tr -d '[:space:]')
                 item=$(bw list items | jq -c ".[] | select(.id == \"$id\")")
                 itemType=$(echo "$item" | jq -r ".type")
@@ -283,21 +276,17 @@ case "$chosen" in
                     3) itemType=".card" ;;
                     4) itemType=".identity" ;;
                 esac
-                chosen=$(item_list | ${menuCmd}); [ -n "$chosen" ] || exit 1
+                chosen=$(item_list | $menuCmd $menuListArgs); [ -n "$chosen" ] || exit 1
                 case "$chosen" in
-                    copy)   keys=$(echo "$copyCmds" | jq -r "${itemType} | keys[]")
-                            unset fail
-                            for key in $keys; do
-                                value=$(echo "$item" | jq -r "${key}")
-                                cmds=$(echo "$copyCmds" | jq -r "${itemType}[\"${key}\"][]")
-                                for cmd in "$cmds"; do
-                                    if ! eval "$cmd"; then
-                                        notify-send "$self" "Copy command failed: \"$cmd\"" &
-                                        fail=t; fi
-                                done
-                            done
-                            [ -z "$fail" ] &&
-                                notify-send "$self" "$name copied successfully." & ;;
+                    copy)   jsonPath="$itemType"
+                            if [ "$jsonPath" = ".login" ]; then
+                                chosen=$(login_copy_list | $menuCmd $menuListArgs)
+                                [ "$chosen" != username ] && [ "$chosen" != password ] && exit 1
+                                jsonPath="$jsonPath.$chosen"
+                            fi
+                            eval "echo '$item' | jq -r '$jsonPath' | $copyCmd" &&
+                                notify-send "$self" "$name copied successfully." ||
+                                notify-send "$self" "Copy command failed." & ;;
                     delete) bw delete item "$id" &&
                                 notify-send "$self" "Deletion successful." ||
                                 notify-send "$self" "Deletion failed." & ;;
