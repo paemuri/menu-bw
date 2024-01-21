@@ -266,7 +266,7 @@ case "$chosen" in
                     notify-send "$self" "Sync failed." & ;;
     "run Bitwarden Electron") bitwarden ;;
     $sepStr*) exit 1 ;;
-    *)          name=$(echo "$chosen" | cut -d '|' -f 1)
+    *)          name=$(echo "$chosen" | cut -d '|' -f 1 | xargs)
                 id=$(echo "$chosen" | cut -d '|' -f 2 | tr -d '[:space:]')
                 item=$(bw list items | jq -c ".[] | select(.id == \"$id\")")
                 itemType=$(echo "$item" | jq -r ".type")
