@@ -1,5 +1,8 @@
 # menu-bw
 
+> [!WARNING]  
+> This project was archived, deprecated. I now use [rofi-rbw](https://github.com/fdw/rofi-rbw).
+
 This is a fork of [Sife-ops/dmenu_bw](https://github.com/Sife-ops/dmenu_bw) to
 include the following patches:
 
